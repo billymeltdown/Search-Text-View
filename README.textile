@@ -1,0 +1,10 @@
+h1. Search Text View
+
+This is just a sample/reference project, demonstrating how we can integrate @UISearchBar@ and @UITextView@ such that the user can search within the text document, and when tapping on a result, jump to the point in that text containing the search result. 
+
+I imagine the searching could probably be done more efficiently than crawling through the text with the @rangeOfString:@ methods of @NSString@, but as long as the length of the search text must be greater than or equal to 3, it runs pretty snappy. Performance degrades with larger documents, and in those cases it would probably be best to avoid searching as the user types, and wait until the user taps the Search button on the keyboard. This can be done by intercepting the @searchBar:textDidChange:@ delegate method or by becoming the delegate of the @UISearchBar@ and only firing the search when @searchBarSearchButtonClicked:@ is received.
+
+Feel free to mod and send pull requests. 
+
+Billy Gray
+"http://zetetic.net":http://zetetic.net
