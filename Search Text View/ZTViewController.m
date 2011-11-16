@@ -170,22 +170,30 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    [tableView deselectRowAtIndexPath:indexPath animated:NO];
     NSDictionary *result = [self.searchResults objectAtIndex:indexPath.row];
     NSUInteger location = [[result objectForKey:kSEARCH_RESULT_CONTEXT_LOCATION_KEY] intValue];
     NSUInteger length = [[result objectForKey:kSEARCH_RESULT_CONTEXT_STRING_KEY] length];
     NSRange range = NSMakeRange(location, length);
+    
+    CGPoint offset = [self.textView contentOffset];
+    NSLog(@"Y offset before scroll: %f", offset.y);
+    
     // this, unfortunately, will scroll so that the text only just appears 
     // at the bottom of the screen, "visible", but not at the top as we'd like
     [self.textView scrollRangeToVisible: range];
-
-//      // maybe something along these lines would work better?
-//    CGPoint offset = [self.textView contentOffset];
-//    CGSize size = [self.textView contentSize];
-//    CGPoint newOffset = CGPointMake(offset.x, offset.y - size.height + 10.0);
-//    [self.textView setContentOffset:newOffset animated:YES];
     
-    [searchDisplayController setActive:NO animated:YES];
+    offset = [self.textView contentOffset];
+    NSLog(@"Y offset after scroll: %f", offset.y);
+    
+    CGRect frame = [self.textView frame];
+    CGPoint newOffset = CGPointMake(offset.x, frame.size.height - 20.0);
+    [self.textView setContentOffset:newOffset animated:NO];
+    
+    offset = [self.textView contentOffset];
+    NSLog(@"Y offset after adjustment: %f", offset.y);
+    
+    [searchDisplayController setActive:NO animated:NO];
 }
 
 #pragma mark - UISearchDisplayController Delegate methods
@@ -193,10 +201,16 @@
 - (BOOL)searchDisplayController:(UISearchDisplayController *)controller shouldReloadTableForSearchString:(NSString *)searchString
 {
     NSLog(@"received request to search");
-    [self _filterResultsForSearchText:searchString];
-    
-    // Return YES to cause the search result table view to be reloaded.
-    return YES;
+    // we need to squash searches until there's at least three characters to search on
+    if ([searchString length] >= 3) 
+    {
+        [self _filterResultsForSearchText:searchString];
+        // Return YES to cause the search result table view to be reloaded.
+        return YES;
+    }
+    else {
+        return NO;
+    }
 }
 
 #pragma mark - Search implementation
@@ -216,8 +230,8 @@
         location = range.location;
         // create a dictionary describing the search result: location in doc plus text around it for results display
         NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithCapacity:4];
-        // the location in the document where our term was found
-        [dict setObject:[NSNumber numberWithInt:range.location] forKey:kSEARCH_RESULT_LOCATION_KEY];
+//        // the location in the document where our term was found
+//        [dict setObject:[NSNumber numberWithInt:range.location] forKey:kSEARCH_RESULT_LOCATION_KEY];
         
         // let's try to get a range on the text surrounding our found result while we're here
         NSInteger contextStart;
@@ -235,8 +249,7 @@
         NSString *contextString = [textDocument substringWithRange:contextRange];
         [dict setObject:contextString forKey:kSEARCH_RESULT_CONTEXT_STRING_KEY];
         [dict setObject:[NSNumber numberWithInt:contextRange.location] forKey:kSEARCH_RESULT_CONTEXT_LOCATION_KEY];
-        // FIXME: this may need a minus 1, do check on it
-        [dict setObject:[NSNumber numberWithInt:CHAR_COUNT_PRECEDING_RESULT] forKey:kSEARCH_RESULT_LOCATION_IN_CONTEXT_KEY];
+//        [dict setObject:[NSNumber numberWithInt:CHAR_COUNT_PRECEDING_RESULT] forKey:kSEARCH_RESULT_LOCATION_IN_CONTEXT_KEY];
         
         NSLog(@"adding search result dict: %@", dict);
         [self.searchResults addObject: dict];
